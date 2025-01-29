@@ -7,6 +7,8 @@ import org.jobrunr.jobs.context.JobContext;
 import org.jobrunr.jobs.context.JobDashboardProgressBar;
 import org.jobrunr.scheduling.BackgroundJob;
 import org.jobrunr.scheduling.JobBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,8 @@ import java.util.stream.Stream;
 
 @Service
 public class OrderFulfillmentTask {
+
+    private static final Logger logger = LoggerFactory.getLogger(OrderFulfillmentTask.class);
 
     @Value("${stock-locations}")
     private List<String> stockLocations;
@@ -44,15 +48,18 @@ public class OrderFulfillmentTask {
 
     }
 
-    @Recurring(id = "monthly-sales-report", cron = "${monthly-sales-report.cron}", zoneId = "Europe/Brussels")
+    @Recurring(id = "monthly-sales-report", cron = "0 0 1 * *", zoneId = "Asia/Seoul")
     public void generateMonthlySalesReport() throws InterruptedException {
         YearMonth previousMonth = YearMonth.now().minusMonths(1);
         orderFulfillmentService.generateMonthlySalesReport(previousMonth);
     }
 
-    @Recurring(id = "daily-resupply", cron = "${daily-resupply.cron}", zoneId = "Europe/Brussels")
+    @Recurring(id = "daily-resupply", cron = "0 * * * * *", zoneId = "Asia/Seoul")
     public void resupply(JobContext jobContext) throws InterruptedException {
         JobDashboardProgressBar jobDashboardProgressBar = jobContext.progressBar(stockLocations.size());
+
+        logger.info("Resupplying stock locations - {}", stockLocations);
+
         for(String stockLocation : stockLocations) {
             orderFulfillmentService.resupply(stockLocation);
             jobDashboardProgressBar.increaseByOne();
